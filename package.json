@@ -1,0 +1,16 @@
+{
+  "name": "tradeguard",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "A trading safety layer for pi-hosted agents: intercepts every tool call, screens on-chain risk and decision hallucination before it reaches Binance Agent OS.",
+  "scripts": {
+    "demo": "tsx src/demo.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
