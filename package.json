@@ -6,11 +6,21 @@
   "description": "A trading safety layer for pi-hosted agents: intercepts every tool call, screens on-chain risk and decision hallucination before it reaches Binance Agent OS.",
   "scripts": {
     "demo": "tsx src/demo.ts",
-    "typecheck": "tsc --noEmit"
+    "demo:live": "tsx src/demo-live.ts",
+    "typecheck": "tsc --noEmit",
+    "demo:pi": "tsx src/demo-pi.ts",
+    "demo:agentos": "tsx src/demo-agentos.ts",
+    "demo:real": "tsx src/demo-real.ts",
+    "agentos:login": "tsx src/agentos-login.ts",
+    "demo:pitch": "tsx src/demo-pitch.ts"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "^0.85.1",
+    "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }

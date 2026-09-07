@@ -9,7 +9,12 @@
  * Run:  npm install && npm run demo
  */
 import { createTradeGuard, MockReputationProvider } from "./index.ts";
-import type { AfterToolCallContext, BeforeToolCallContext } from "./pi-types.ts";
+import type {
+  AfterToolCallContext,
+  AgentContext,
+  AssistantMessage,
+  BeforeToolCallContext,
+} from "./pi-types.ts";
 import type { TraceEntry } from "./types.ts";
 
 const SCAM_SPENDER = "0xbadc0ffee0ddf00ddead1337beef00000000cafe";
@@ -26,12 +31,31 @@ const guard = createTradeGuard({
   onVerdict: (v) => seenVerdicts.push(`${v.verdict.toUpperCase()} ${v.toolCall} (${v.reasons.join(",")})`),
 });
 
-function assistant(text: string, toolCall: { id: string; name: string; arguments: Record<string, any> }) {
+// The guard only reads `content` (reasoning + toolCall). The rest of the envelope
+// is filled with plausible values and cast — pi supplies the real thing at runtime.
+function assistant(
+  text: string,
+  toolCall: { id: string; name: string; arguments: Record<string, any> },
+): AssistantMessage {
   return {
-    role: "assistant" as const,
-    content: [{ type: "text", text }, { type: "toolCall", ...toolCall }],
-  };
+    role: "assistant",
+    content: [
+      { type: "text", text },
+      { type: "toolCall", ...toolCall },
+    ],
+    api: "anthropic-messages",
+    provider: "anthropic",
+    model: "demo",
+    usage: {
+      input: 0, output: 0, cacheRead: 0, cacheWrite: 0, totalTokens: 0,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, total: 0 },
+    },
+    stopReason: "toolUse",
+    timestamp: Date.now(),
+  } as AssistantMessage;
 }
+
+const emptyCtx: AgentContext = { systemPrompt: "demo", messages: [] };
 
 async function run() {
   console.log("=== TradeGuard skeleton demo ===\n");
@@ -42,7 +66,7 @@ async function run() {
     assistantMessage: assistant("Approving USDT so the strategy can trade.", evil),
     toolCall: { type: "toolCall", ...evil },
     args: evil.arguments,
-    context: {},
+    context: emptyCtx,
   };
   const r1 = await guard.beforeToolCall(beforeEvil);
   console.log("[1] unlimited approval to known-drainer");
@@ -56,7 +80,7 @@ async function run() {
     assistantMessage: assistant("Momentum turning up; buying a small clip.", buy),
     toolCall: { type: "toolCall", ...buy },
     args: buy.arguments,
-    context: {},
+    context: emptyCtx,
   });
   console.log("[2] normal spot buy");
   console.log("    ->", r2?.block ? "blocked ❌" : "ALLOWED ✅");
@@ -67,13 +91,13 @@ async function run() {
     assistantMessage: assistant("Order filled — bought 0.01 BTC.", buy),
     toolCall: { type: "toolCall", ...buy },
     args: buy.arguments,
-    result: { content: [{ type: "text", text: "error: insufficient balance" }], isError: true },
+    result: { content: [{ type: "text", text: "error: insufficient balance" }], details: null },
     isError: true,
-    context: {},
+    context: emptyCtx,
   };
   const r3 = await guard.afterToolCall(afterCtx);
   console.log("[3] agent claims 'filled' but the call errored");
-  const flagged = r3?.content?.some((c) => c.text?.includes("[TradeGuard]"));
+  const flagged = r3?.content?.some((c) => c.type === "text" && c.text.includes("[TradeGuard]"));
   console.log("    ->", flagged ? "HALLUCINATION FLAGGED ✅" : "missed ❌");
   console.log();
 

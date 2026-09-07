@@ -106,4 +106,26 @@ export function createTradeGuard(opts: TradeGuardOptions) {
 
 export { TraceStore } from "./trace.ts";
 export { MockReputationProvider } from "./engines/reputation.ts";
-export type { ReputationProvider } from "./engines/reputation.ts";
+export type {
+  AddressInfo,
+  ContractInfo,
+  ReputationProvider,
+} from "./engines/reputation.ts";
+export { LiveReputationProvider } from "./engines/live-reputation.ts";
+export type { LiveReputationOptions } from "./engines/live-reputation.ts";
+
+// Swappable LLM brain (platform + model both replaceable).
+export { createLlm, PLATFORMS } from "./llm.ts";
+export type { Llm, LlmPlatform, CreateLlmOptions } from "./llm.ts";
+
+// Agent OS (MCP) connector.
+export { connectAgentOs, toolsFromClient, AGENT_OS_MCP_URL } from "./agent-os.ts";
+export type { AgentOsConnection, ConnectAgentOsOptions } from "./agent-os.ts";
+
+// Agent OS interactive OAuth (browser login).
+export {
+  authorizeAgentOs,
+  connectAgentOsWithOAuth,
+  FileOAuthProvider,
+} from "./agent-os-auth.ts";
+export type { OAuthConnectOptions } from "./agent-os-auth.ts";
