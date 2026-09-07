@@ -49,13 +49,22 @@ Zero-trust: TradeGuard never holds trade or withdrawal permissions. It's a gate.
 
 ## The 30–60s video
 
-**Screen:** a terminal. **Command to record:**
+**Screen:** a terminal. **Command to record (the real one):**
+
+```bash
+npm run demo:agent      # a REAL LLM drives the agent; TradeGuard reacts live
+```
+
+Needs `DMX_API_KEY` in `.env`. Four scenarios run through a real pi Agent loop with
+a real model deciding each move: ① a risky-contract approval is blocked, ② a transfer
+to a sanctioned address is blocked, ③ a clean trade is allowed, ④ the agent lies that
+a failed sale succeeded and gets caught. Colorized; narrate over it.
+
+Offline no-key fallback (deterministic, ~15s) if you'd rather not show a live key:
 
 ```bash
 npm run demo:pitch
 ```
-
-(Paced, colorized, offline, deterministic — runs in ~15–20s. Narrate over it.)
 
 ### Narration — English (≈45s)
 
@@ -104,8 +113,8 @@ npm run demo:pitch
 
 | Command | Shows |
 |---|---|
-| `npm run demo:pitch` | the 4-beat story (use this for the video) |
-| `npm run demo:real` | a **real LLM** (DMX) gets socially engineered; guard blocks it live |
+| `npm run demo:agent` | **real LLM** drives 4 live scenarios (contract risk, sanctioned addr, allow, hallucination) |
+| `npm run demo:pitch` | the same 4 beats offline & deterministic (no key) |
 | `npm run demo:agentos` | guard blocks a tool served over the **real MCP protocol** (Agent OS shape) |
 | `npm run demo:live` | **real OFAC + GoPlus** flag a sanctioned address on the network |
 

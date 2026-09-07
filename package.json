@@ -12,7 +12,8 @@
     "demo:agentos": "tsx src/demo-agentos.ts",
     "demo:real": "tsx src/demo-real.ts",
     "agentos:login": "tsx src/agentos-login.ts",
-    "demo:pitch": "tsx src/demo-pitch.ts"
+    "demo:pitch": "tsx src/demo-pitch.ts",
+    "demo:agent": "tsx src/demo-agent.ts"
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

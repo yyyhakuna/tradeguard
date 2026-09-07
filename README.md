@@ -14,7 +14,9 @@ npm install
 npm run demo         # four scenes via direct hook calls, no network, no pi build
 npm run demo:pi      # runs a REAL pi Agent loop offline; guard blocks the bad approval
 npm run demo:agentos # REAL MCP: guard blocks an Agent-OS-shaped MCP tool before it runs
+npm run demo:agent   # REAL LLM drives 4 live scenarios (block contract/addr, allow, hallucination)
 npm run demo:real    # REAL LLM (DMX) drives the agent; guard blocks a live decision
+npm run demo:pitch   # the 4 beats offline & deterministic (no key) — for a video
 npm run demo:live    # real OFAC + GoPlus checks (BSCSCAN_KEY=xxx adds contract checks)
 npm run typecheck
 ```

@@ -9,35 +9,69 @@ import type { EngineResult, Finding } from "../types.ts";
  * result is the single source of truth: if the agent's own words claim a fill
  * that the result contradicts, that's a confirmed execution hallucination.
  *
- * This MVP catches the same-call case (agent's reasoning already asserts success
- * while the tool errored / returned no fill). The cross-step case — the agent
- * claims "bought 0.5 BTC" in a LATER message — is caught by keeping these
- * ground-truth results in the TraceStore and checking future `assistantMessage`s
- * against them. That reconciliation is the next iteration; the storage it needs
- * already exists.
+ * Two modes, both grounded in the tool result as the single source of truth:
+ *   - same-call: the requesting message already asserts success while the tool
+ *     errored (`screen`).
+ *   - cross-step: the agent claims success in a LATER narrative message, which
+ *     contradicts a tool result recorded earlier (`reconcileClaims`).
  */
+
+/** A recorded ground-truth outcome of one executed tool call. */
+export interface ToolOutcome {
+  toolName: string;
+  isError: boolean;
+  /** Short human-readable result text (or error). */
+  summary: string;
+}
+
+/** Words an agent uses to assert an action completed. */
+const SUCCESS_CLAIM = /\b(bought|sold|filled|executed|success(?:ful|fully)?|done|complete[d]?|transferred|sent|approved|settled|updated|confirmed|went through)\b/i;
+
 export class DecisionIntegrityEngine {
   screen(ctx: AfterToolCallContext): EngineResult {
-    const findings: Finding[] = [];
     const reasoning = extractReasoning(ctx.assistantMessage);
-    const claimsSuccess = /\b(bought|sold|filled|executed|success|done|transferred)\b/i.test(reasoning);
-
-    if (claimsSuccess && ctx.isError) {
-      findings.push({
-        engine: "decision-integrity",
-        code: "claimed-success-on-failed-call",
-        severity: "CRITICAL",
-        summary: "Agent's reasoning asserts success, but the tool call returned an error",
-        evidence: {
-          toolCallId: ctx.toolCall.id,
-          reasoningExcerpt: reasoning.slice(0, 240),
-          resultIsError: ctx.isError,
-          resultText: firstText(ctx.result.content).slice(0, 240),
-        },
-      });
+    if (SUCCESS_CLAIM.test(reasoning) && ctx.isError) {
+      return {
+        findings: [
+          {
+            engine: "decision-integrity",
+            code: "claimed-success-on-failed-call",
+            severity: "CRITICAL",
+            summary: "Agent's reasoning asserts success, but the tool call returned an error",
+            evidence: {
+              toolCallId: ctx.toolCall.id,
+              reasoningExcerpt: reasoning.slice(0, 240),
+              resultIsError: ctx.isError,
+              resultText: firstText(ctx.result.content).slice(0, 240),
+            },
+          },
+        ],
+      };
     }
-    return { findings };
+    return { findings: [] };
   }
+}
+
+/**
+ * Cross-step reconciliation: does this narrative `claimText` assert success for
+ * a tool call that actually errored earlier? Ground truth (the recorded
+ * `outcomes`) wins — the claim is the hallucination, not the other way around.
+ */
+export function reconcileClaims(claimText: string, outcomes: ToolOutcome[]): Finding[] {
+  if (!SUCCESS_CLAIM.test(claimText)) return [];
+  return outcomes
+    .filter((o) => o.isError)
+    .map((o) => ({
+      engine: "decision-integrity" as const,
+      code: "hallucinated-success-cross-step",
+      severity: "CRITICAL" as const,
+      summary: `Agent claims success, but ${o.toolName} actually failed`,
+      evidence: {
+        toolName: o.toolName,
+        actualResult: o.summary.slice(0, 200),
+        claimExcerpt: claimText.slice(0, 200),
+      },
+    }));
 }
 
 export function extractReasoning(msg: { content: Array<{ type: string; text?: string }> }): string {
