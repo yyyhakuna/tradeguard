@@ -27,6 +27,12 @@ export interface ReputationProvider {
   getAddress(address: string): Promise<AddressInfo>;
   /** Addresses the user has transacted with before (for first-seen + poisoning checks). */
   knownCounterparties(): Promise<string[]>;
+  /**
+   * Addresses that `address` has RECENTLY transacted with — used for
+   * guilt-by-association: is a clean-looking recipient actually funneling to/from
+   * blacklisted addresses? Optional; engines skip the check when absent.
+   */
+  recentCounterparties?(address: string): Promise<string[]>;
 }
 
 /** Offline mock. Seed it with whatever the demo needs. */
@@ -35,6 +41,8 @@ export class MockReputationProvider implements ReputationProvider {
     private readonly contracts: Record<string, ContractInfo> = {},
     private readonly addresses: Record<string, AddressInfo> = {},
     private readonly counterparties: string[] = [],
+    /** address -> the addresses it recently transacted with (for association checks). */
+    private readonly links: Record<string, string[]> = {},
   ) {}
 
   async getContract(a: string): Promise<ContractInfo> {
@@ -45,5 +53,8 @@ export class MockReputationProvider implements ReputationProvider {
   }
   async knownCounterparties(): Promise<string[]> {
     return this.counterparties.map((a) => a.toLowerCase());
+  }
+  async recentCounterparties(a: string): Promise<string[]> {
+    return (this.links[a.toLowerCase()] ?? []).map((x) => x.toLowerCase());
   }
 }

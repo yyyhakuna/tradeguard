@@ -35,29 +35,40 @@ execution hallucination **flagged**, trace tamper **detected**.
 ```
 pi Agent runtime
   beforeToolCall ── TradeGuard ─┐   L1 capture (reasoning+args)
-                                │   L2 chain-safety screen
-                                │   L3 policy gate → block? 
+                                │   L2 pre-engines: chain-safety + trade-safety
+                                │   L3 policy gate → block?
                                 │   L5 trace(pre, hash-chained)
      (only if allowed) ─────────┘
         │  forward to Agent OS MCP tool
         ▼
-  afterToolCall ── TradeGuard ──    L2 decision-integrity (args vs result)
+  afterToolCall ── TradeGuard ──    L2 post-engines: decision-integrity (claim vs result)
                                     L5 trace(post)  + inject warning to agent
 ```
 
-| File | Role |
+Layout (layered; add a check by writing an engine, no core change):
+
+```
+src/
+  core/          guard (engine pipeline) · policy gate · hash-chained trace · domain + pi types
+  engines/       chain-safety · trade-safety · decision-integrity
+  reputation/    ReputationProvider interface + mock and live (BscScan/GoPlus/OFAC) backends
+  integrations/  llm (swappable platform+model) · agent-os (MCP) · agent-os-auth (OAuth)
+  cli/           agentos-login
+  demos/         basic · pi · agent-os · real · agent · pitch · live
+  index.ts       public barrel (re-exports everything)
+```
+
+| Path | Role |
 |------|------|
-| `src/index.ts` | `createTradeGuard()` → the pi hook pair |
-| `src/engines/chain-safety.ts` | L2 on-chain: unlimited-approval & sanctioned/scam recipient hard blocks, poisoning warn |
-| `src/engines/integrity.ts` | L2 decision integrity: execution-hallucination (same-call case) |
-| `src/engines/reputation.ts` | data-source interface + offline mock |
-| `src/engines/live-reputation.ts` | real adapters: BscScan (verified/age) + GoPlus (flags/scam) + OFAC SDN (sanctions) |
-| `src/policy.ts` | L3 gate: findings → allow/warn/block |
-| `src/trace.ts` | L5 append-only, hash-chained, tamper-evident trace |
-| `src/pi-types.ts` | re-exports pi's REAL hook contracts (`@earendil-works/pi-agent-core` + `pi-ai`) |
-| `src/agent-os.ts` | connects Binance Agent OS's MCP server, wraps its tools as guarded pi AgentTools |
-| `src/agent-os-auth.ts` | interactive OAuth for Agent OS (browser login, loopback redirect, token store) |
-| `src/llm.ts` | swappable LLM brain: platform (DMX/OpenAI/DeepSeek/custom) + model both replaceable |
+| `core/guard.ts` | `createTradeGuard()` → runs the pre/post engine pipeline, one verdict, trace, block/warn/inject |
+| `core/policy.ts` · `core/trace.ts` | L3 gate (findings → allow/warn/block) · L5 append-only hash-chained trace |
+| `core/types.ts` · `core/pi.ts` | domain types + `PreToolEngine`/`PostToolEngine` · pi's REAL hook contracts |
+| `engines/chain-safety.ts` | on-chain: unlimited-approval & sanctioned/scam recipient hard blocks; poisoning + blacklist-linked-recipient warns |
+| `engines/trade-safety.ts` | trade ops: excessive leverage · full cross-margin · oversized notional (configurable) |
+| `engines/integrity.ts` | decision integrity: same-call + cross-step execution hallucination |
+| `reputation/provider.ts` · `reputation/live.ts` | data-source interface + mock · BscScan + GoPlus + OFAC SDN |
+| `integrations/agent-os.ts` · `agent-os-auth.ts` | MCP connection to Agent OS · interactive OAuth (CIMD, browser login) |
+| `integrations/llm.ts` | swappable LLM brain: platform (DMX/OpenAI/DeepSeek/custom) + model both replaceable |
 
 ## Wiring into real pi
 
@@ -174,11 +185,10 @@ wallet surface once it is exposed.
 
 ## Deliberately left for the next iteration
 
-- **Cross-step execution hallucination** — agent claims "bought 0.5 BTC" in a
-  *later* message. The ground-truth results are already stored in the trace;
-  the reconciliation check reads future `assistantMessage`s against them.
-- **Confidence / credibility** — coherence (LLM judge, ring-fenced),
-  reproducibility (replay flip-rate), long-run calibration (Brier).
+- **Pre-execution confidence score** — coherence of the agent's reasoning and
+  data-citation checks (e.g. reconcile a claimed price against a live quote),
+  reproducibility (replay flip-rate), long-run calibration (Brier). Runs as another
+  `PreToolEngine`; hard-verifiable checks can block, softer ones warn.
 - **Dashboard** over the JSONL trace.
 
 ## Verify before building further

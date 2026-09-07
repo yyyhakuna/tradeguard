@@ -16,7 +16,7 @@ import { readFileSync } from "node:fs";
 import { Agent } from "@earendil-works/pi-agent-core";
 import type { AgentTool } from "@earendil-works/pi-agent-core";
 import { Type } from "@earendil-works/pi-ai";
-import { createLlm, createTradeGuard, MockReputationProvider } from "./index.ts";
+import { createLlm, createTradeGuard, MockReputationProvider } from "../index.ts";
 
 // Minimal .env loader (no dependency) — fills process.env for keys not already set.
 function loadEnv() {

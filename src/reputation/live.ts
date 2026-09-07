@@ -31,7 +31,7 @@ import type {
   AddressInfo,
   ContractInfo,
   ReputationProvider,
-} from "./reputation.ts";
+} from "./provider.ts";
 
 export interface LiveReputationOptions {
   /** Explorer API key (BscScan / Etherscan). Required for verification + age. */
@@ -170,6 +170,12 @@ export class LiveReputationProvider implements ReputationProvider {
       }
       return [...set];
     });
+  }
+
+  /** Addresses `address` recently transacted with — from its on-chain tx history. */
+  async recentCounterparties(address: string): Promise<string[]> {
+    const addr = address.toLowerCase();
+    return this.cached(`recent:${addr}`, this.cfg.cacheTtlMs, () => this.explorerCounterparties(addr));
   }
 
   // ── Block explorer (BscScan / Etherscan V2) ───────────────────────────────

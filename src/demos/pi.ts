@@ -18,7 +18,7 @@ import { Agent } from "@earendil-works/pi-agent-core";
 import type { AgentTool, StreamFn } from "@earendil-works/pi-agent-core";
 import { Type, createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import type { AssistantMessage, Message, Model, ToolCall, Usage } from "@earendil-works/pi-ai";
-import { createTradeGuard, MockReputationProvider } from "./index.ts";
+import { createTradeGuard, MockReputationProvider } from "../index.ts";
 
 const SCAM_SPENDER = "0xbadc0ffee0ddf00ddead1337beef00000000cafe";
 const MAX_UINT256 = ((1n << 256n) - 1n).toString();

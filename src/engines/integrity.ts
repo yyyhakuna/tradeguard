@@ -1,5 +1,5 @@
-import type { AfterToolCallContext } from "../pi-types.ts";
-import type { EngineResult, Finding } from "../types.ts";
+import type { AfterToolCallContext } from "../core/pi.ts";
+import type { EngineResult, Finding, PostToolEngine } from "../core/types.ts";
 
 /**
  * L2 — Decision integrity (execution-hallucination half).
@@ -27,7 +27,8 @@ export interface ToolOutcome {
 /** Words an agent uses to assert an action completed. */
 const SUCCESS_CLAIM = /\b(bought|sold|filled|executed|success(?:ful|fully)?|done|complete[d]?|transferred|sent|approved|settled|updated|confirmed|went through)\b/i;
 
-export class DecisionIntegrityEngine {
+export class DecisionIntegrityEngine implements PostToolEngine {
+  readonly id = "decision-integrity" as const;
   screen(ctx: AfterToolCallContext): EngineResult {
     const reasoning = extractReasoning(ctx.assistantMessage);
     if (SUCCESS_CLAIM.test(reasoning) && ctx.isError) {

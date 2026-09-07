@@ -8,7 +8,7 @@
  * Run:  BSCSCAN_KEY=xxxx npm run demo:live
  *       (without the key it still runs the sanctions/scam address checks)
  */
-import { LiveReputationProvider } from "./index.ts";
+import { LiveReputationProvider } from "../index.ts";
 
 // A currently-listed OFAC SDN crypto address. Should come back sanctioned.
 // (The list is live — if delisted upstream, swap for any entry from ofacListUrl.)

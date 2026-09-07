@@ -13,7 +13,7 @@
  *   4. npm run agentos:login again          → opens the browser; authorize; done
  */
 import { readFileSync, writeFileSync } from "node:fs";
-import { FileOAuthProvider, connectAgentOsWithOAuth } from "./agent-os-auth.ts";
+import { FileOAuthProvider, connectAgentOsWithOAuth } from "../integrations/agent-os-auth.ts";
 
 function loadEnv() {
   try {

@@ -7,9 +7,9 @@
  *
  * Run:  npm run demo:pitch
  */
-import { createTradeGuard, MockReputationProvider } from "./index.ts";
-import type { AfterToolCallContext, AgentContext, AssistantMessage, BeforeToolCallContext } from "./pi-types.ts";
-import type { TraceEntry } from "./types.ts";
+import { createTradeGuard, MockReputationProvider } from "../index.ts";
+import type { AfterToolCallContext, AgentContext, AssistantMessage, BeforeToolCallContext } from "../index.ts";
+import type { TraceEntry } from "../index.ts";
 
 // ── tiny presentation helpers ────────────────────────────────────────────────
 const c = {

@@ -8,14 +8,14 @@
  *
  * Run:  npm install && npm run demo
  */
-import { createTradeGuard, MockReputationProvider } from "./index.ts";
+import { createTradeGuard, MockReputationProvider } from "../index.ts";
 import type {
   AfterToolCallContext,
   AgentContext,
   AssistantMessage,
   BeforeToolCallContext,
-} from "./pi-types.ts";
-import type { TraceEntry } from "./types.ts";
+} from "../index.ts";
+import type { TraceEntry } from "../index.ts";
 
 const SCAM_SPENDER = "0xbadc0ffee0ddf00ddead1337beef00000000cafe";
 

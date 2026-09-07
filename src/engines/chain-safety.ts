@@ -1,6 +1,6 @@
-import type { ToolCall } from "../pi-types.ts";
-import type { EngineResult, Finding } from "../types.ts";
-import type { ReputationProvider } from "./reputation.ts";
+import type { BeforeToolCallContext, ToolCall } from "../core/pi.ts";
+import type { EngineResult, Finding, PreToolEngine } from "../core/types.ts";
+import type { ReputationProvider } from "../reputation/provider.ts";
 
 /** 2^256 - 1: the canonical "unlimited" ERC-20 approval amount. */
 const MAX_UINT256 = (1n << 256n) - 1n;
@@ -49,10 +49,12 @@ function parseAction(call: ToolCall): OnchainAction | undefined {
  * MVP hard blocks: (1) unlimited approval to an unverified/flagged contract,
  * (2) transfer to a sanctioned or known-scam address. Plus a poisoning WARN.
  */
-export class ChainSafetyEngine {
+export class ChainSafetyEngine implements PreToolEngine {
+  readonly id = "chain-safety" as const;
   constructor(private readonly rep: ReputationProvider) {}
 
-  async screen(call: ToolCall): Promise<EngineResult> {
+  async screen(ctx: BeforeToolCallContext): Promise<EngineResult> {
+    const call = ctx.toolCall;
     const action = parseAction(call);
     if (!action || action.kind === "other") return { findings: [] };
     const findings: Finding[] = [];
@@ -90,9 +92,35 @@ export class ChainSafetyEngine {
       }
       const poison = await this.detectPoisoning(action.recipient);
       if (poison) findings.push(poison);
+
+      const linked = await this.detectBlacklistLinks(action.recipient, call.id);
+      if (linked) findings.push(linked);
     }
 
     return { findings };
+  }
+
+  /**
+   * Guilt-by-association: the recipient itself may be clean, but if its recent
+   * counterparties include sanctioned/scam addresses, it's likely a funnel. WARN
+   * (evidence-backed but not proof) — surfaces for review without hard-blocking.
+   */
+  private async detectBlacklistLinks(recipient: string, toolCallId: string): Promise<Finding | undefined> {
+    if (!this.rep.recentCounterparties) return undefined;
+    const recent = await this.rep.recentCounterparties(recipient);
+    const tainted: Array<{ address: string; sanctioned: boolean; knownScam: boolean }> = [];
+    for (const addr of recent.slice(0, 25)) {
+      const info = await this.rep.getAddress(addr);
+      if (info.sanctioned || info.knownScam) tainted.push({ address: addr, ...info });
+    }
+    if (tainted.length === 0) return undefined;
+    return {
+      engine: "chain-safety",
+      code: "recipient-linked-to-blacklist",
+      severity: "WARN",
+      summary: `Recipient ${recipient} recently transacted with ${tainted.length} blacklisted address(es)`,
+      evidence: { recipient, linkedTo: tainted, scanned: recent.length, toolCallId },
+    };
   }
 
   /** Address poisoning: recipient looks like a known counterparty but isn't. */
